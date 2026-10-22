@@ -29,6 +29,7 @@ public class VaccineView {
     private static final String QUIT_BUTTON_STYLE = "-fx-background-color: #FFE0E0;";
 
     private final Stage stage = new Stage(StageStyle.UTILITY);
+    private final ScrollPane scrollPane;
 
     public VaccineView(Consumer<String> onAction) {
         stage.setTitle("Vaccinations");
@@ -48,12 +49,16 @@ public class VaccineView {
             }
         }
 
-        ScrollPane scrollPane = new ScrollPane(root);
+        this.scrollPane = new ScrollPane(root);
         scrollPane.setFitToWidth(true);
         scrollPane.setStyle("-fx-background-color: transparent;");
 
         stage.setScene(new Scene(scrollPane));
         positionStageAtBottomRight(stage);
+    }
+
+    public ScrollPane getRootView() {
+        return scrollPane;
     }
 
     private Label createHeaderLabel(String text) {

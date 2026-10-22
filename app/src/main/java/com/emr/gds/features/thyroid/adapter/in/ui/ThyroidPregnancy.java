@@ -286,9 +286,8 @@ public class ThyroidPregnancy extends BorderPane {
         previewArea.setText(formatted);
         sendToEmr(formatted);
         
-        // Close the window after sending
-        Stage stage = (Stage) getScene().getWindow();
-        if (stage != null) stage.close();
+        // Close the tab or window after sending
+        com.emr.gds.IttiaApp.closeWorkspaceTabOrStage(this);
     }
 
     private void handleClearAllFields() {
@@ -335,10 +334,7 @@ public class ThyroidPregnancy extends BorderPane {
     }
 
     private void closeWindow() {
-        Stage stage = (Stage) getScene().getWindow();
-        if (stage != null) {
-            stage.close();
-        }
+        com.emr.gds.IttiaApp.closeWorkspaceTabOrStage(this);
     }
 
     // ─────────────────────────────────────────────────────────────────────────

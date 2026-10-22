@@ -359,7 +359,11 @@ public class ClinicalLabController implements Initializable {
 
     @FXML
     private void handleQuit() {
-        Stage stage = (Stage) labTable.getScene().getWindow();
-        stage.close();
+        com.emr.gds.IttiaApp.closeWorkspaceTabOrStage(labTable);
+    }
+
+    @FXML
+    private void onQuit() {
+        handleQuit();
     }
 }

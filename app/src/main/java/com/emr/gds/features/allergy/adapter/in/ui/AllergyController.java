@@ -66,7 +66,7 @@ public class AllergyController {
     private void setupBindings() {
         // Menu Actions
         view.getSaveMenuItem().setOnAction(e -> copyToClipboard());
-        view.getExitMenuItem().setOnAction(e -> System.exit(0));
+        view.getExitMenuItem().setOnAction(e -> closeWindow());
         view.getDefaultTemplateMenuItem().setOnAction(e -> resetToDefault());
         view.getAllDeniedTemplateMenuItem().setOnAction(e -> denyAllSymptoms());
         view.getAnaDeniedTemplateMenuItem().setOnAction(e -> denyAnaphylaxisOnly());
@@ -277,10 +277,7 @@ public class AllergyController {
     }
 
     private void closeWindow() {
-        Stage stage = (Stage) view.getQuitButton().getScene().getWindow();
-        if (stage != null) {
-            stage.close();
-        }
+        com.emr.gds.IttiaApp.closeWorkspaceTabOrStage(view.getQuitButton());
     }
 
     private void showAlert(String title, String msg) {

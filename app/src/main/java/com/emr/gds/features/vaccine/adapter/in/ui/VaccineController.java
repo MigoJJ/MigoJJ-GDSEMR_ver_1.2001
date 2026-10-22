@@ -15,7 +15,7 @@ public class VaccineController {
 
     private void handleAction(String text) {
         switch (text) {
-            case "Quit" -> view.getStage().close();
+            case "Quit" -> com.emr.gds.IttiaApp.closeWorkspaceTabOrStage(view.getRootView());
             case "Side Effect" -> VaccineSideEffect.open();
             default -> {
                 boolean ok = service.logVaccine(text);
@@ -24,6 +24,10 @@ public class VaccineController {
                 }
             }
         }
+    }
+
+    public javafx.scene.control.ScrollPane getView() {
+        return view.getRootView();
     }
 
     public void show() {

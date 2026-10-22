@@ -13,4 +13,8 @@ public class VaccineAction {
         }
         controller.show();
     }
+
+    public static javafx.scene.control.ScrollPane createView() {
+        return new VaccineController(new VaccineService(new EmrBridgeService())).getView();
+    }
 }

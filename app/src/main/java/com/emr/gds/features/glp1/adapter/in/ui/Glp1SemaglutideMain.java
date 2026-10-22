@@ -9,6 +9,7 @@ import javafx.application.Application;
 import javafx.concurrent.Task;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
+import javafx.scene.Parent;
 import javafx.scene.Scene;
 import javafx.scene.control.Alert;
 import javafx.scene.control.Button;
@@ -32,6 +33,19 @@ public class Glp1SemaglutideMain extends Application {
 
     @Override
     public void start(Stage stage) {
+        Parent root = createView(stage);
+        Scene scene = new Scene(root);
+        stage.setTitle("GLP-1RA (Semaglutide) - EMR Module Demo");
+        stage.setScene(scene);
+        StageSizing.fitToScreen(stage, 0.5, 0.9);
+        stage.show();
+    }
+
+    public Parent createView() {
+        return createView(null);
+    }
+
+    public Parent createView(Stage stage) {
         Glp1SemaglutidePane medPane = new Glp1SemaglutidePane();
 
         TextArea txtOutput = new TextArea();
@@ -75,7 +89,7 @@ public class Glp1SemaglutideMain extends Application {
                     ).showAndWait()
             );
         });
-        btnQuit.setOnAction(e -> stage.close());
+        btnQuit.setOnAction(e -> com.emr.gds.IttiaApp.closeWorkspaceTabOrStage(btnQuit));
 
         HBox buttonBox = new HBox(10, btnExport, btnSave, btnClear, btnQuit);
         buttonBox.setAlignment(Pos.CENTER_RIGHT);
@@ -88,18 +102,16 @@ public class Glp1SemaglutideMain extends Application {
 
         BorderPane root = new BorderPane();
         root.getStyleClass().add("glp1-window");
+        try {
+            root.getStylesheets().add(getClass().getResource("/css/glp1.css").toExternalForm());
+        } catch (Exception ignored) {}
         HBox referenceBox = new HBox(btnInsurance);
         referenceBox.setPadding(new Insets(10, 12, 0, 12));
         root.setTop(referenceBox);
         root.setCenter(medPane);
         root.setBottom(bottomPane);
 
-        Scene scene = new Scene(root);
-        scene.getStylesheets().add(getClass().getResource("/css/glp1.css").toExternalForm());
-        stage.setTitle("GLP-1RA (Semaglutide) - EMR Module Demo");
-        stage.setScene(scene);
-        StageSizing.fitToScreen(stage, 0.5, 0.9);
-        stage.show();
+        return root;
     }
 
     private void openInsuranceReference(Stage owner, Button button) {

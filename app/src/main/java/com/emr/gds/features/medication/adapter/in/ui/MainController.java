@@ -295,14 +295,42 @@ public class MainController {
 
     @FXML private void backToLauncher() throws IOException {
         Parent root = FXMLLoader.load(getClass().getResource("/com/emr/gds/features/medication/launcher.fxml"));
+        Tab tab = findContainingTab(mainTabPane);
+        if (tab != null) {
+            root.getProperties().put("workspaceTab", tab);
+            tab.setContent(root);
+            tab.setText("Medications");
+            return;
+        }
+
         Stage stage = (Stage) mainTabPane.getScene().getWindow();
-        stage.setScene(new Scene(root));
-        StageSizing.fitToScreen(stage, 0.3, 0.6, 400, 500);
+        if (stage != null && !com.emr.gds.IttiaApp.isMainStage(stage)) {
+            stage.setScene(new Scene(root));
+            StageSizing.fitToScreen(stage, 0.3, 0.6, 400, 500);
+        }
     }
 
     @FXML private void quitApp() {
-        Stage stage = (Stage) mainTabPane.getScene().getWindow();
-        stage.close();
+        com.emr.gds.IttiaApp.closeWorkspaceTabOrStage(mainTabPane);
+    }
+
+    private Tab findContainingTab(javafx.scene.Node node) {
+        javafx.scene.Node curr = node;
+        while (curr != null) {
+            Object prop = curr.getProperties().get("workspaceTab");
+            if (prop instanceof Tab tab) {
+                return tab;
+            }
+            if (curr.getParent() instanceof TabPane tabPane && tabPane != mainTabPane) {
+                for (Tab tab : tabPane.getTabs()) {
+                    if (tab.getContent() == curr) {
+                        return tab;
+                    }
+                }
+            }
+            curr = curr.getParent();
+        }
+        return null;
     }
 
     private void selectTabByName(String name) {

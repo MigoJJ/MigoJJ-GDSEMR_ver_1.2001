@@ -266,7 +266,11 @@ public class IAMButtonAction {
         Button b = new Button(title);
         b.setOnAction(e -> {
             try {
-            com.emr.gds.features.vaccine.adapter.in.ui.VaccineAction.open();
+                if (app != null) {
+                    app.openWorkspaceTab("Vaccines", com.emr.gds.features.vaccine.adapter.in.ui.VaccineAction.createView());
+                } else {
+                    com.emr.gds.features.vaccine.adapter.in.ui.VaccineAction.open();
+                }
             } catch (Exception ex) {
                 System.err.println("Failed to launch Vaccine application: " + ex.getMessage());
             }
@@ -287,10 +291,15 @@ public class IAMButtonAction {
     }
 
     /**
-     * Opens or focuses the shared KCD-9 Database Manager window.
+     * Opens or focuses the shared KCD-9 Database Manager window or workspace tab.
      */
     public void openKcd9Manager() {
         try {
+            if (app != null) {
+                KCDDatabaseManagerJavaFX manager = new KCDDatabaseManagerJavaFX();
+                app.openWorkspaceTab("KCD-9", manager.createView(null));
+                return;
+            }
             if (kcdDatabaseManager == null || kcdStage == null || !kcdStage.isShowing()) {
                 kcdDatabaseManager = new KCDDatabaseManagerJavaFX();
                 kcdStage = new Stage();
@@ -319,9 +328,13 @@ public class IAMButtonAction {
         Button b = new Button(title);
         b.setOnAction(e -> Platform.runLater(() -> {
             try {
-                Glp1SemaglutideMain glp1App = new Glp1SemaglutideMain();
-                Stage glp1Stage = new Stage();
-                glp1App.start(glp1Stage);
+                if (app != null) {
+                    app.openWorkspaceTab("GLP-1", new Glp1SemaglutideMain().createView(null));
+                } else {
+                    Glp1SemaglutideMain glp1App = new Glp1SemaglutideMain();
+                    Stage glp1Stage = new Stage();
+                    glp1App.start(glp1Stage);
+                }
             } catch (Exception ex) {
                 System.err.println("Failed to open GLP-1 application: " + ex.getMessage());
                 ex.printStackTrace();

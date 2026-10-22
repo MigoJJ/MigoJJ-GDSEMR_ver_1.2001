@@ -8,6 +8,7 @@ import com.emr.gds.infrastructure.service.EmrBridgeService;
 import javafx.application.Application;
 import javafx.beans.Observable;
 import javafx.geometry.Insets;
+import javafx.scene.Parent;
 import javafx.scene.Scene;
 import javafx.scene.control.*;
 import javafx.scene.input.Clipboard;
@@ -20,6 +21,17 @@ public class GoutApp extends Application {
 
     @Override
     public void start(Stage stage) {
+        Parent scroll = createView(stage);
+        stage.setTitle("Gout — 통풍 분류 및 진단 참고");
+        stage.setScene(new Scene(scroll, 720, 850));
+        stage.show();
+    }
+
+    public Parent createView() {
+        return createView(null);
+    }
+
+    public Parent createView(Stage stage) {
         VBox root = new VBox(12);
         root.setPadding(new Insets(18));
         root.setStyle("-fx-font-family: 'Segoe UI', sans-serif;");
@@ -98,7 +110,9 @@ public class GoutApp extends Application {
         save.setOnAction(e -> {
             if (bridge.insertBlock(5, "\n" + summary.getText() + "\n")) {
                 new Alert(Alert.AlertType.INFORMATION, "EMR에 성공적으로 저장되었습니다.").showAndWait();
-                stage.close();
+                if (stage != null) {
+                    stage.close();
+                }
             } else {
                 new Alert(Alert.AlertType.ERROR, "EMR을 찾을 수 없습니다. 메인 창이 열려 있는지 확인해 주세요.").showAndWait();
             }
@@ -140,14 +154,22 @@ public class GoutApp extends Application {
                 urateSection, imagingSection, calculate, result, summary, new HBox(10, copy, save), evidence);
         ScrollPane scroll = new ScrollPane(root);
         scroll.setFitToWidth(true);
-        stage.setTitle("Gout — 통풍 분류 및 진단 참고");
-        stage.setScene(new Scene(scroll, 720, 850));
-        stage.show();
+        return scroll;
     }
 
     private Hyperlink sourceLink(String title, String url) {
         Hyperlink link = new Hyperlink(title);
-        link.setOnAction(e -> getHostServices().showDocument(url));
+        link.setOnAction(e -> {
+            try {
+                if (getHostServices() != null) {
+                    getHostServices().showDocument(url);
+                } else {
+                    java.awt.Desktop.getDesktop().browse(java.net.URI.create(url));
+                }
+            } catch (Exception ex) {
+                ex.printStackTrace();
+            }
+        });
         return link;
     }
 

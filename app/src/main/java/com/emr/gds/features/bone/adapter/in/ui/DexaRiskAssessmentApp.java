@@ -8,6 +8,7 @@ import javafx.application.Application;
 import javafx.application.Platform;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
+import javafx.scene.Parent;
 import javafx.scene.Scene;
 import javafx.scene.control.Alert;
 import javafx.scene.control.Button;
@@ -56,15 +57,20 @@ public class DexaRiskAssessmentApp extends Application {
     @Override
     public void start(Stage primaryStage) {
         primaryStage.setTitle("Osteoporosis Risk Assessment (DEXA)");
-        initComponents();
+        Parent root = createView();
 
-        Scene scene = new Scene(createLayout(), 600, 680);
+        Scene scene = new Scene(root, 600, 680);
         scene.getStylesheets().add("");
         primaryStage.setScene(scene);
         primaryStage.setResizable(true);
         primaryStage.show();
 
         scoreField.requestFocus();
+    }
+
+    public Parent createView() {
+        initComponents();
+        return createLayout();
     }
 
     private void initComponents() {
@@ -184,7 +190,7 @@ public class DexaRiskAssessmentApp extends Application {
         saveBtn.setOnAction(e -> saveToEmr());
 
         Button closeBtn = new Button("Close");
-        closeBtn.setOnAction(e -> ((Stage) closeBtn.getScene().getWindow()).close());
+        closeBtn.setOnAction(e -> com.emr.gds.IttiaApp.closeWorkspaceTabOrStage(closeBtn));
 
         HBox box = new HBox(12, assessBtn, clearBtn, saveBtn, closeBtn);
         box.setAlignment(Pos.CENTER);

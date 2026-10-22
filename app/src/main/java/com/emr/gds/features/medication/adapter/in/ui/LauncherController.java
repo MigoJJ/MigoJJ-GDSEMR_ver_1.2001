@@ -8,6 +8,8 @@ import javafx.fxml.FXMLLoader;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
 import javafx.scene.control.Button;
+import javafx.scene.control.Tab;
+import javafx.scene.control.TabPane;
 import javafx.scene.layout.VBox;
 import javafx.stage.Stage;
 
@@ -56,10 +58,20 @@ public class LauncherController {
             MainController controller = loader.getController();
             controller.setSelectedCategory(category);
 
+            Tab tab = findContainingTab(categoryContainer);
+            if (tab != null) {
+                root.getProperties().put("workspaceTab", tab);
+                tab.setContent(root);
+                tab.setText("Medications (" + category + ")");
+                return;
+            }
+
             Stage stage = (Stage) categoryContainer.getScene().getWindow();
-            stage.setScene(new Scene(root));
-            stage.setTitle("EMR Helper – " + category);
-            StageSizing.fitToScreen(stage, 0.7, 0.8, 900, 650);
+            if (stage != null && !com.emr.gds.IttiaApp.isMainStage(stage)) {
+                stage.setScene(new Scene(root));
+                stage.setTitle("EMR Helper – " + category);
+                StageSizing.fitToScreen(stage, 0.7, 0.8, 900, 650);
+            }
         } catch (IOException ex) {
             ex.printStackTrace();
         }
@@ -67,7 +79,25 @@ public class LauncherController {
 
     @FXML
     private void onQuit() {
-        Stage stage = (Stage) categoryContainer.getScene().getWindow();
-        stage.close();
+        com.emr.gds.IttiaApp.closeWorkspaceTabOrStage(categoryContainer);
+    }
+
+    private Tab findContainingTab(javafx.scene.Node node) {
+        javafx.scene.Node curr = node;
+        while (curr != null) {
+            Object prop = curr.getProperties().get("workspaceTab");
+            if (prop instanceof Tab tab) {
+                return tab;
+            }
+            if (curr.getParent() instanceof TabPane tabPane) {
+                for (Tab tab : tabPane.getTabs()) {
+                    if (tab.getContent() == curr) {
+                        return tab;
+                    }
+                }
+            }
+            curr = curr.getParent();
+        }
+        return null;
     }
 }

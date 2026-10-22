@@ -2,9 +2,12 @@ package com.emr.gds.shared.ui;
 
 import javafx.application.Platform;
 import javafx.collections.ListChangeListener;
+import javafx.geometry.Side;
 import javafx.scene.Node;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
+import javafx.scene.control.ContextMenu;
+import javafx.scene.control.MenuItem;
 import javafx.scene.control.TextArea;
 import javafx.scene.control.TextFormatter;
 import javafx.scene.input.KeyCode;
@@ -13,6 +16,8 @@ import javafx.stage.Window;
 
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.regex.Matcher;
@@ -29,7 +34,7 @@ import java.util.regex.Pattern;
 public final class TextAreaControlProcessor {
 
     private static final String PROCESSED_KEY = "gdsfx.textarea.processed";
-    private static final Pattern ABBREVIATION_PATTERN = Pattern.compile(":([\\S]+)");
+    private static final Pattern ABBREVIATION_PATTERN = Pattern.compile(":([a-zA-Z0-9_가-힣]+)");
 
     private TextAreaControlProcessor() {
         // Utility class
@@ -136,13 +141,96 @@ public final class TextAreaControlProcessor {
     }
 
     private static void attachAbbreviationHandler(TextArea textArea, Map<String, String> abbrevMap) {
+        ContextMenu popup = new ContextMenu();
+        popup.setAutoHide(true);
+
         textArea.addEventHandler(KeyEvent.KEY_PRESSED, event -> {
             if (event.getCode() == KeyCode.SPACE) {
+                if (popup.isShowing()) {
+                    popup.hide();
+                }
                 if (expandAbbreviationOnSpace(textArea, abbrevMap)) {
+                    event.consume();
+                }
+            } else if (event.getCode() == KeyCode.ESCAPE) {
+                if (popup.isShowing()) {
+                    popup.hide();
                     event.consume();
                 }
             }
         });
+
+        textArea.textProperty().addListener((obs, oldText, newText) -> {
+            if (!textArea.isFocused()) {
+                popup.hide();
+                return;
+            }
+            showAutocompleteSuggestions(textArea, abbrevMap, popup);
+        });
+
+        textArea.focusedProperty().addListener((obs, oldF, isFocused) -> {
+            if (!isFocused && popup.isShowing()) {
+                popup.hide();
+            }
+        });
+    }
+
+    private static void showAutocompleteSuggestions(TextArea ta, Map<String, String> abbrevMap, ContextMenu popup) {
+        int caret = Math.min(ta.getCaretPosition(), ta.getText().length());
+        if (caret <= 0) {
+            popup.hide();
+            return;
+        }
+
+        String upToCaret = ta.getText(0, caret);
+        int start = Math.max(upToCaret.lastIndexOf(' '), upToCaret.lastIndexOf('\n')) + 1;
+        if (start >= caret) {
+            popup.hide();
+            return;
+        }
+
+        String word = upToCaret.substring(start);
+        if (!word.startsWith(":")) {
+            popup.hide();
+            return;
+        }
+
+        String prefix = word.substring(1).toLowerCase();
+        List<String> matches = new ArrayList<>();
+        if ("cd".startsWith(prefix)) {
+            matches.add("cd");
+        }
+        for (String key : abbrevMap.keySet()) {
+            if (key.toLowerCase().startsWith(prefix)) {
+                matches.add(key);
+                if (matches.size() >= 8) break;
+            }
+        }
+
+        if (matches.isEmpty()) {
+            popup.hide();
+            return;
+        }
+
+        popup.getItems().clear();
+        for (String matchKey : matches) {
+            String replacement = getAbbreviationReplacement(matchKey, abbrevMap);
+            String preview = (replacement != null && replacement.length() > 40)
+                    ? replacement.substring(0, 40) + "..."
+                    : (replacement != null ? replacement : "");
+            MenuItem item = new MenuItem(":" + matchKey + "  ➔  " + preview);
+            item.setOnAction(e -> {
+                int curCaret = ta.getCaretPosition();
+                ta.deleteText(start, curCaret);
+                ta.insertText(start, replacement + " ");
+                popup.hide();
+            });
+            popup.getItems().add(item);
+        }
+
+        if (!popup.isShowing() && ta.getScene() != null && ta.getScene().getWindow() != null) {
+            popup.show(ta, Side.BOTTOM, 10, 0);
+        }
     }
 
     private static boolean expandAbbreviationOnSpace(TextArea ta, Map<String, String> abbrevMap) {

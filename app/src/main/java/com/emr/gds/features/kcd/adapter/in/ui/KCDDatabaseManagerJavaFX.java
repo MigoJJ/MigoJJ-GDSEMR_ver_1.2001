@@ -18,6 +18,7 @@ import javafx.collections.transformation.SortedList;
 import javafx.concurrent.Task;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
+import javafx.scene.Parent;
 import javafx.scene.Scene;
 import javafx.scene.control.Alert;
 import javafx.scene.control.Button;
@@ -59,6 +60,17 @@ public class KCDDatabaseManagerJavaFX {
     private final double[] columnWidths = {100, 100, 80, 250, 250, 300};
 
     public void start(Stage primaryStage) {
+        Parent root = createView(primaryStage);
+        Scene scene = new Scene(root, 1200, 800);
+        primaryStage.setScene(scene);
+        primaryStage.show();
+    }
+
+    public Parent createView() {
+        return createView(null);
+    }
+
+    public Parent createView(Stage primaryStage) {
         this.stage = primaryStage;
         BorderPane root = new BorderPane();
         root.setPadding(new Insets(10));
@@ -67,12 +79,9 @@ public class KCDDatabaseManagerJavaFX {
         root.setCenter(createTable());
         root.setBottom(createButtonPanel());
 
-        Scene scene = new Scene(root, 1200, 800);
-        primaryStage.setScene(scene);
-        primaryStage.show();
-
         setupEventHandlers();
         loadInitialData();
+        return root;
     }
 
     private TableView<KCDRecord> createTable() {
@@ -132,7 +141,7 @@ public class KCDDatabaseManagerJavaFX {
         refreshButton.setOnAction(e -> loadInitialData());
         copyButton.setOnAction(e -> copySelectedToClipboard());
         saveToEmrButton.setOnAction(e -> saveSelectedToEMR());
-        quitButton.setOnAction(e -> stage.close());
+        quitButton.setOnAction(e -> com.emr.gds.IttiaApp.closeWorkspaceTabOrStage(quitButton));
 
         FilteredList<KCDRecord> filteredData = new FilteredList<>(tableData, p -> true);
         searchField.textProperty().addListener((obs, ov, nv) -> filteredData.setPredicate(createPredicate(nv)));

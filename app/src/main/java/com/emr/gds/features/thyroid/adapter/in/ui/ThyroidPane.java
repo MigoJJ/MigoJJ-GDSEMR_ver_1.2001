@@ -575,10 +575,7 @@ public class ThyroidPane extends VBox {
                 ).showAndWait()
             );
 
-            Stage stage = (Stage) btnSaveQuit.getScene().getWindow();
-            if (stage != null) {
-                stage.close();
-            }
+            com.emr.gds.IttiaApp.closeWorkspaceTabOrStage(btnSaveQuit);
         });
     }
 

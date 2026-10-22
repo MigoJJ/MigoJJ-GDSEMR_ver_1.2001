@@ -18,12 +18,19 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.regex.Pattern;
 import javafx.application.Platform;
+import javafx.geometry.Pos;
 import javafx.scene.control.Alert;
+import javafx.scene.control.Button;
+import javafx.scene.control.Label;
 import javafx.scene.control.TextArea;
 import javafx.scene.control.TextFormatter;
+import javafx.scene.control.Tooltip;
 import javafx.scene.input.MouseButton;
 import javafx.scene.input.MouseEvent;
 import javafx.scene.layout.GridPane;
+import javafx.scene.layout.HBox;
+import javafx.scene.layout.Priority;
+import javafx.scene.layout.VBox;
 import javafx.scene.text.Font;
 import javafx.scene.text.FontWeight;
 import javafx.scene.text.FontPosture;
@@ -316,7 +323,7 @@ public class IAMTextArea {
     // ================================ 
 
     /**
-     * Constructs the central grid of text areas.
+     * Constructs the central grid of text areas with explicit title headers and edit buttons.
      */
     public GridPane buildCenterAreas() {
         GridPane grid = new GridPane();
@@ -327,7 +334,27 @@ public class IAMTextArea {
 
         int rows = 5, cols = 2;
         for (int i = 0; i < Math.min(areas.size(), rows * cols); i++) {
-            grid.add(areas.get(i), i % cols, i / cols);
+            final int idx = i;
+            TextArea ta = areas.get(i);
+
+            VBox box = new VBox(3);
+            HBox header = new HBox(6);
+            header.setAlignment(Pos.CENTER_LEFT);
+
+            String title = (idx < TEXT_AREA_TITLES.length) ? TEXT_AREA_TITLES[idx] : "Area " + (idx + 1);
+            Label titleLabel = new Label(title);
+            titleLabel.setStyle("-fx-font-weight: bold; -fx-text-fill: #334155; -fx-font-size: 11px;");
+
+            Button editBtn = new Button("✎");
+            editBtn.setTooltip(new Tooltip("Open " + title + " editor"));
+            editBtn.setStyle("-fx-font-size: 10px; -fx-padding: 1 5 1 5; -fx-cursor: hand; -fx-background-radius: 4;");
+            editBtn.setOnAction(e -> handleDoubleClick(ta, idx));
+
+            header.getChildren().addAll(titleLabel, editBtn);
+            box.getChildren().addAll(header, ta);
+            VBox.setVgrow(ta, Priority.ALWAYS);
+
+            grid.add(box, i % cols, i / cols);
         }
         return grid;
     }

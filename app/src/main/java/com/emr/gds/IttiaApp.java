@@ -33,6 +33,7 @@ import javafx.application.Platform;
 import javafx.collections.ObservableList;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
+import javafx.scene.Node;
 import javafx.scene.Scene;
 import javafx.scene.control.Alert;
 import javafx.scene.control.Button;
@@ -40,6 +41,8 @@ import javafx.scene.control.ButtonType;
 import javafx.scene.control.Label;
 import javafx.scene.control.PasswordField;
 import javafx.scene.control.Separator;
+import javafx.scene.control.Tab;
+import javafx.scene.control.TabPane;
 import javafx.scene.control.TextArea;
 import javafx.scene.control.TextField;
 import javafx.scene.control.ToolBar;
@@ -55,8 +58,13 @@ import javafx.scene.layout.VBox;
 import javafx.stage.Stage;
 import javafx.fxml.FXMLLoader;
 
+import com.emr.gds.features.allergy.adapter.in.ui.AllergyController;
+import com.emr.gds.features.gout.adapter.in.ui.GoutApp;
 import com.emr.gds.features.medication.adapter.in.ui.MedicationCategory;
 import com.emr.gds.features.thyroid.adapter.in.ui.ThyroidLauncher;
+import com.emr.gds.features.thyroid.adapter.in.ui.ThyroidPane;
+import com.emr.gds.features.thyroid.adapter.in.ui.ThyroidPregnancy;
+import com.emr.gds.features.thyroid.domain.ThyroidEntry;
 import java.io.File;
 import java.io.IOException;
 import java.io.PrintWriter;
@@ -108,7 +116,9 @@ public class IttiaApp extends Application {
     private final CredentialRepository credentialRepository = new SqliteCredentialRepository();
     private IAIFreqFrame freqStage; // Manages the vital signs window
     private IAMFunctionkey functionKeyHandler;
+    private static IttiaApp instance;
     private Stage mainStage;
+    private TabPane workspaceTabs;
     
     // Profiling
     private long startTime;
@@ -131,6 +141,7 @@ public class IttiaApp extends Application {
      */
     @Override
     public void start(Stage primaryStage) {
+        instance = this;
         this.startTime = System.currentTimeMillis();
         this.mainStage = primaryStage;
         primaryStage.setTitle(APP_TITLE);
@@ -363,13 +374,90 @@ public class IttiaApp extends Application {
 
         root.setTop(buildTopToolBar());
         root.setLeft(buildLeftPanel());
-        root.setCenter(buildCenterPanel());
+        root.setCenter(buildCenterWorkspace());
         root.setBottom(buildBottomPanel());
 
         // Establish the connection bridge for inter-component communication
         establishBridgeConnection();
 
         return root;
+    }
+
+    /**
+     * Builds the unified workspace tab pane.
+     */
+    private Node buildCenterWorkspace() {
+        workspaceTabs = new TabPane();
+        workspaceTabs.getStyleClass().add("workspace-tab-pane");
+        Tab mainChartTab = new Tab("Chart / SOAP", buildCenterPanel());
+        mainChartTab.setClosable(false);
+        workspaceTabs.getTabs().add(mainChartTab);
+        return workspaceTabs;
+    }
+
+    /**
+     * Opens a feature view inside a workspace tab, or selects it if already open.
+     */
+    public void openWorkspaceTab(String title, Node content) {
+        if (workspaceTabs == null) return;
+        for (Tab tab : workspaceTabs.getTabs()) {
+            if (title.equals(tab.getText())) {
+                workspaceTabs.getSelectionModel().select(tab);
+                return;
+            }
+        }
+        Tab newTab = new Tab(title, content);
+        newTab.setClosable(true);
+        if (content != null) {
+            content.getProperties().put("workspaceTab", newTab);
+        }
+        workspaceTabs.getTabs().add(newTab);
+        workspaceTabs.getSelectionModel().select(newTab);
+    }
+
+    public static IttiaApp getInstance() {
+        return instance;
+    }
+
+    public static boolean isMainStage(javafx.stage.Window window) {
+        return instance != null && instance.mainStage != null && instance.mainStage == window;
+    }
+
+    /**
+     * Safely closes the workspace tab containing the given node, or closes the window
+     * if it is a standalone secondary stage (never closes the main application stage).
+     */
+    public static void closeWorkspaceTabOrStage(Node node) {
+        if (node == null) return;
+
+        // 1. Check if node or an ancestor belongs to a workspace tab
+        Node curr = node;
+        while (curr != null) {
+            Object prop = curr.getProperties().get("workspaceTab");
+            if (prop instanceof Tab tab) {
+                TabPane pane = tab.getTabPane();
+                if (pane != null) {
+                    pane.getTabs().remove(tab);
+                    return;
+                }
+            }
+            if (curr.getParent() instanceof TabPane tabPane) {
+                for (Tab tab : tabPane.getTabs()) {
+                    if (tab.getContent() == curr) {
+                        tabPane.getTabs().remove(tab);
+                        return;
+                    }
+                }
+            }
+            curr = curr.getParent();
+        }
+
+        // 2. If in a secondary window, safely close it without touching the main stage
+        if (node.getScene() != null && node.getScene().getWindow() instanceof Stage stage) {
+            if (!isMainStage(stage)) {
+                stage.close();
+            }
+        }
     }
 
     /**
@@ -389,7 +477,7 @@ public class IttiaApp extends Application {
         Button dexaButton = new Button("DEXA");
         dexaButton.getStyleClass().add("button-accent");
         dexaButton.setOnAction(e -> {
-            DexaRiskAssessmentApp.open();
+            openWorkspaceTab("DEXA", new DexaRiskAssessmentApp().createView());
         });
         
         Button ekgButton = new Button("EKG");
@@ -410,13 +498,14 @@ public class IttiaApp extends Application {
         Button goutButton = new Button("Gout");
         goutButton.getStyleClass().add("button-accent");
         goutButton.setOnAction(e -> {
-            new GoutApp().start(new Stage());
+            openWorkspaceTab("Gout", new GoutApp().createView(mainStage));
         });
 
         Button categoryButton = new Button("Category");
         categoryButton.setOnAction(e -> {
             try {
-                new MedicationCategory().start(new Stage());
+                FXMLLoader loader = new FXMLLoader(getClass().getResource("/com/emr/gds/features/medication/launcher.fxml"));
+                openWorkspaceTab("Medications", loader.load());
             } catch (Exception ex) {
                 ex.printStackTrace();
             }
@@ -463,7 +552,8 @@ public class IttiaApp extends Application {
             categoryButton.getStyleClass().add("button-accent");
             categoryButton.setOnAction(e -> {
                 try {
-                    new MedicationCategory().start(new Stage());
+                    FXMLLoader loader = new FXMLLoader(getClass().getResource("/com/emr/gds/features/medication/launcher.fxml"));
+                    openWorkspaceTab("Medications", loader.load());
                 } catch (Exception ex) {
                     ex.printStackTrace();
                 }
@@ -471,17 +561,17 @@ public class IttiaApp extends Application {
 
             Button thyroidButton = new Button("Thyroid");
             thyroidButton.getStyleClass().add("button-accent");
-            thyroidButton.setOnAction(e -> ThyroidLauncher.openThyroidEmr());
+            thyroidButton.setOnAction(e -> openWorkspaceTab("Thyroid EMR", new ThyroidPane(new ThyroidEntry())));
 
             Button thyroidPregButton = new Button("Thyroid Pregnancy");
             thyroidPregButton.getStyleClass().add("button-accent");
-            thyroidPregButton.setOnAction(e -> ThyroidLauncher.openThyroidPregnancy());
+            thyroidPregButton.setOnAction(e -> openWorkspaceTab("Thyroid Pregnancy", new ThyroidPregnancy()));
 
             Button allergyButton = new Button("Allergy");
             allergyButton.getStyleClass().add("button-accent");
             allergyButton.setOnAction(e -> {
                 try {
-                    new AllergyApp().start(new Stage());
+                    openWorkspaceTab("Allergy", new AllergyController().getView());
                 } catch (Exception ex) {
                     ex.printStackTrace();
                 }
@@ -489,7 +579,14 @@ public class IttiaApp extends Application {
 
             Button labCodeButton = new Button("LabCode");
             labCodeButton.getStyleClass().add("button-accent");
-            labCodeButton.setOnAction(e -> com.emr.gds.features.clinicalLab.adapter.in.ui.ClinicalLabLauncher.open());
+            labCodeButton.setOnAction(e -> {
+                try {
+                    FXMLLoader loader = new FXMLLoader(getClass().getResource("/com/emr/gds/features/clinicalLab/main.fxml"));
+                    openWorkspaceTab("Lab Codes", loader.load());
+                } catch (Exception ex) {
+                    com.emr.gds.features.clinicalLab.adapter.in.ui.ClinicalLabLauncher.open();
+                }
+            });
             
             bottomBar.getItems().add(new Separator());
             bottomBar.getItems().add(categoryButton);
