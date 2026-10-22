@@ -9,11 +9,20 @@
 set -euo pipefail  # Exit on error, unset vars, pipe failures
 
 # --- Configuration ---
-PROJECT_DIR="$HOME/git/GDSEMR_ver_1.1001"
+PROJECT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 GRADLE_WRAPPER="./gradlew"
 LOG_FILE="$PROJECT_DIR/run.log"
 TIMESTAMP=$(date '+%Y-%m-%d %H:%M:%S')
 # export ORG_GRADLE_JAVA_HOME=/path/to/jdk-25 # uncomment to force a specific JDK 25
+
+# Ensure DISPLAY is available for JavaFX under Wayland/terminal sessions
+if [[ -z "${DISPLAY:-}" ]]; then
+    if [[ -S /tmp/.X11-unix/X0 ]]; then
+        export DISPLAY=:0
+    elif [[ -S /tmp/.X11-unix/X1 ]]; then
+        export DISPLAY=:1
+    fi
+fi
 
 # --- Colors for output ---
 RED='\033[0;31m'

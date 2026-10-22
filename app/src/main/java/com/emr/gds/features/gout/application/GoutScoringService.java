@@ -58,10 +58,7 @@ public final class GoutScoringService {
         else if (input.crystals().isPositive()) status = ClassificationStatus.SUFFICIENT;
         else if (input.urateIndex() == -1) status = ClassificationStatus.INCOMPLETE;
         else {
-            score = calculateScore(false, input.jointIndex(), input.clinicalFeatures(),
-                    input.timePatternIndex(), input.clinicalTophus(), input.urateIndex(),
-                    input.crystals() == CrystalResult.NEGATIVE,
-                    input.ultrasoundDoubleContour() || input.dectPositive(), input.erosionPositive());
+            score = calculateScore(input);
             status = isClassified(score) ? ClassificationStatus.CLASSIFIED : ClassificationStatus.BELOW_THRESHOLD;
         }
 
@@ -135,6 +132,21 @@ public final class GoutScoringService {
 
     private static void requireRange(int value, int min, int max, String name) {
         if (value < min || value > max) throw new IllegalArgumentException(name + " is outside the allowed range");
+    }
+
+    public static int calculateScore(AssessmentInput input) {
+        java.util.Objects.requireNonNull(input, "input cannot be null");
+        return calculateScore(
+                input.crystals().isPositive(),
+                input.jointIndex(),
+                input.clinicalFeatures(),
+                input.timePatternIndex(),
+                input.clinicalTophus(),
+                input.urateIndex(),
+                input.crystals() == CrystalResult.NEGATIVE,
+                input.ultrasoundDoubleContour() || input.dectPositive(),
+                input.erosionPositive()
+        );
     }
 
     public static int calculateScore(

@@ -398,62 +398,6 @@ public class ThyroidEntry implements Serializable {
     public String getProblemListSummary() { return problemListSummary; }
     public void setProblemListSummary(String problemListSummary) { this.problemListSummary = problemListSummary; }
 
-    /**
-     * Very small helper to build a compact problem-list summary.
-     */
-    public String buildProblemListSummary() {
-        StringBuilder sb = new StringBuilder();
-
-        if (categories != null && categories.contains(MainCategory.HYPOTHYROIDISM)) {
-            sb.append("Hypothyroidism");
-            if (hypoEtiology != null) {
-                sb.append(" (").append(hypoEtiology.name()).append(")");
-            }
-            if (Boolean.TRUE.equals(hypoOvert)) {
-                sb.append(", overt");
-            } else if (Boolean.FALSE.equals(hypoOvert)) {
-                sb.append(", subclinical");
-            }
-            if (lt4DoseMcgPerDay != null) {
-                sb.append(" on LT4 ").append(lt4DoseMcgPerDay).append(" mcg/day");
-            }
-            sb.append(". ");
-        }
-
-        if (categories != null && categories.contains(MainCategory.HYPERTHYROIDISM)) {
-            sb.append("Hyperthyroidism");
-            if (hyperEtiology != null) {
-                sb.append(" (").append(hyperEtiology.name()).append(")");
-            }
-            if (Boolean.TRUE.equals(hyperActive)) {
-                sb.append(" - active.");
-            } else if (Boolean.FALSE.equals(hyperActive)) {
-                sb.append(" - in remission.");
-            }
-            sb.append(" ");
-        }
-
-        if (categories != null && categories.contains(MainCategory.CANCER)) {
-            sb.append("Thyroid cancer");
-            if (cancerHistology != null) {
-                sb.append(" (").append(cancerHistology.name()).append(")");
-            }
-            if (tnmStage != null && !tnmStage.isBlank()) {
-                sb.append(", TNM ").append(tnmStage);
-            }
-            if (ataRisk != null && !ataRisk.isBlank()) {
-                sb.append(", ATA risk ").append(ataRisk);
-            }
-            if (cancerStatus != null && !cancerStatus.isBlank()) {
-                sb.append(", status ").append(cancerStatus);
-            }
-            sb.append(". ");
-        }
-
-        this.problemListSummary = sb.toString().trim();
-        return this.problemListSummary;
-    }
-
     public static Builder builder() {
         return new Builder();
     }

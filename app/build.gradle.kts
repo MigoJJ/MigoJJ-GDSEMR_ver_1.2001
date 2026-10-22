@@ -23,6 +23,29 @@ dependencies {
 
 tasks.withType<Test> {
     useJUnitPlatform()
+    val envDisplay = System.getenv("DISPLAY")
+    if (envDisplay.isNullOrBlank()) {
+        val x0 = file("/tmp/.X11-unix/X0")
+        val x1 = file("/tmp/.X11-unix/X1")
+        if (x0.exists()) {
+            environment("DISPLAY", ":0")
+        } else if (x1.exists()) {
+            environment("DISPLAY", ":1")
+        }
+    }
+}
+
+tasks.withType<JavaExec> {
+    val envDisplay = System.getenv("DISPLAY")
+    if (envDisplay.isNullOrBlank()) {
+        val x0 = file("/tmp/.X11-unix/X0")
+        val x1 = file("/tmp/.X11-unix/X1")
+        if (x0.exists()) {
+            environment("DISPLAY", ":0")
+        } else if (x1.exists()) {
+            environment("DISPLAY", ":1")
+        }
+    }
 }
 
 javafx {
