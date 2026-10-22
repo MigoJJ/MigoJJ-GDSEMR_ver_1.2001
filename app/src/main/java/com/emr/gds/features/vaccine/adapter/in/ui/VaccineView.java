@@ -21,25 +21,20 @@ public class VaccineView {
 
     private static final double FRAME_WIDTH = 500;
     private static final double FRAME_HEIGHT = 900;
-    private static final Font LABEL_FONT = Font.font("Consolas", FontWeight.BOLD, FontPosture.ITALIC, 14);
-    private static final Font BUTTON_FONT = Font.font("Consolas", FontWeight.BOLD, FontPosture.ITALIC, 12);
-    private static final String HEADER_STYLE = "-fx-background-color: #DCE6F0; -fx-padding: 6 0 6 0;";
-    private static final String VACCINE_BUTTON_STYLE = "-fx-background-color: #FFFFFF;";
-    private static final String SIDEEFFECT_BUTTON_STYLE = "-fx-background-color: #FFFBE1;";
-    private static final String QUIT_BUTTON_STYLE = "-fx-background-color: #FFE0E0;";
+    private static final Font LABEL_FONT = Font.font("Segoe UI", FontWeight.BOLD, 13);
+    private static final Font BUTTON_FONT = Font.font("Segoe UI", FontWeight.NORMAL, 12);
+    private static final String HEADER_STYLE = "-fx-background-color: #334155; -fx-text-fill: white; -fx-font-weight: bold; -fx-padding: 7 12; -fx-background-radius: 4;";
+    private static final String VACCINE_BUTTON_STYLE = "-fx-background-color: #ffffff; -fx-text-fill: #1e293b; -fx-border-color: #cbd5e1; -fx-border-radius: 4; -fx-background-radius: 4; -fx-padding: 8 12; -fx-cursor: hand; -fx-alignment: CENTER_LEFT;";
+    private static final String SIDEEFFECT_BUTTON_STYLE = "-fx-background-color: #fffbeb; -fx-text-fill: #b45309; -fx-font-weight: bold; -fx-border-color: #fde68a; -fx-border-radius: 4; -fx-background-radius: 4; -fx-padding: 8 12; -fx-cursor: hand;";
+    private static final String QUIT_BUTTON_STYLE = "-fx-background-color: #fee2e2; -fx-text-fill: #dc2626; -fx-font-weight: bold; -fx-border-color: #fca5a5; -fx-border-radius: 4; -fx-background-radius: 4; -fx-padding: 8 12; -fx-cursor: hand;";
 
-    private final Stage stage = new Stage(StageStyle.UTILITY);
+    private Stage stage;
     private final ScrollPane scrollPane;
 
     public VaccineView(Consumer<String> onAction) {
-        stage.setTitle("Vaccinations");
-        stage.setWidth(FRAME_WIDTH);
-        stage.setHeight(FRAME_HEIGHT);
-        stage.initStyle(StageStyle.UTILITY);
-
-        VBox root = new VBox(4);
-        root.setStyle("-fx-background-color: #333333;");
-        root.setPadding(Insets.EMPTY);
+        VBox root = new VBox(5);
+        root.setStyle("-fx-background-color: #f1f5f9;");
+        root.setPadding(new Insets(10));
 
         for (String text : VaccineConstants.UI_ELEMENTS) {
             if (text.startsWith("###")) {
@@ -51,14 +46,31 @@ public class VaccineView {
 
         this.scrollPane = new ScrollPane(root);
         scrollPane.setFitToWidth(true);
-        scrollPane.setStyle("-fx-background-color: transparent;");
-
-        stage.setScene(new Scene(scrollPane));
-        positionStageAtBottomRight(stage);
+        scrollPane.setStyle("-fx-background-color: #f1f5f9; -fx-background: #f1f5f9;");
     }
 
     public ScrollPane getRootView() {
         return scrollPane;
+    }
+
+    public Stage getStage() {
+        return stage;
+    }
+
+    public void show() {
+        if (stage == null) {
+            stage = new Stage(StageStyle.UTILITY);
+            stage.setTitle("Vaccinations");
+            stage.setWidth(FRAME_WIDTH);
+            stage.setHeight(FRAME_HEIGHT);
+            stage.setScene(new Scene(scrollPane));
+            positionStageAtBottomRight(stage);
+        }
+        if (!stage.isShowing()) {
+            stage.show();
+        } else {
+            stage.toFront();
+        }
     }
 
     private Label createHeaderLabel(String text) {
@@ -90,9 +102,5 @@ public class VaccineView {
         var screenBounds = Screen.getPrimary().getVisualBounds();
         stage.setX(screenBounds.getMaxX() - stage.getWidth());
         stage.setY(screenBounds.getMaxY() - stage.getHeight());
-    }
-
-    public Stage getStage() {
-        return stage;
     }
 }
