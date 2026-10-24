@@ -8,6 +8,11 @@ import com.emr.gds.features.ReferenceFile.ReferenceItemEditController;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import javafx.animation.PauseTransition;
+import javafx.application.Platform;
+import javafx.concurrent.Task;
+import com.emr.gds.util.DesktopFileOpener;
+import java.nio.file.Path;
+import java.util.function.Consumer;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.fxml.FXML;
@@ -93,6 +98,7 @@ public class ReferenceController implements Initializable {
     private ReferenceService referenceService;
     private PauseTransition searchDebounce;
     private int currentPageIndex = 0;
+    private boolean openingReference;
 
     public void setBasePath(File basePath) {
         this.basePath = basePath;
@@ -180,22 +186,42 @@ public class ReferenceController implements Initializable {
 
 
     private void openDirectoryInFileExplorer(File directory) {
-        try {
-            if (directory.exists() && directory.isDirectory()) {
-                if (System.getProperty("os.name").toLowerCase().contains("win")) {
-                    new ProcessBuilder("explorer.exe", directory.getAbsolutePath()).start();
-                }
-                else if (System.getProperty("os.name").toLowerCase().contains("mac")) {
-                    new ProcessBuilder("open", directory.getAbsolutePath()).start();
-                }
-                else if (System.getProperty("os.name").toLowerCase().contains("nix") || System.getProperty("os.name").toLowerCase().contains("nux")) {
-                    new ProcessBuilder("xdg-open", directory.getAbsolutePath()).start();
-                }
+        if (openingReference) return;
+        openingReference = true;
+        setStatus("Sending open request...");
+        Task<Void> task = new Task<>() {
+            @Override
+            protected Void call() throws Exception {
+                launchReferencePath(directory.toPath(),
+                        message -> Platform.runLater(() -> reportOpenFailure(message)));
+                return null;
             }
-        } catch (IOException e) {
-            logger.error("Error opening directory in file explorer: {}", e.getMessage(), e);
-            showAlert("Error", "Could not open directory in file explorer.");
-        }
+        };
+        task.setOnSucceeded(e -> {
+            openingReference = false;
+            setStatus("Open request sent: " + directory.getName());
+        });
+        task.setOnFailed(e -> {
+            openingReference = false;
+            reportOpenFailure(task.getException().getMessage());
+        });
+        Thread worker = new Thread(task, "reference-folder-opener");
+        worker.setDaemon(true);
+        worker.start();
+    }
+
+    protected void launchReferencePath(Path path, Consumer<String> onFailure)
+            throws IOException, InterruptedException {
+        DesktopFileOpener.open(path, onFailure);
+    }
+
+    private void reportOpenFailure(String message) {
+        logger.error("Could not open reference: {}", message);
+        setStatus("Could not open reference.");
+        Alert alert = new Alert(Alert.AlertType.ERROR, message);
+        alert.setTitle("Reference Open Error");
+        if (referenceTable.getScene() != null) alert.initOwner(referenceTable.getScene().getWindow());
+        alert.show();
     }
 
     @FXML

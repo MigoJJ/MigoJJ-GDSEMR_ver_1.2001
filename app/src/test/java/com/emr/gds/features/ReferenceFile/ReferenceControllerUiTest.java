@@ -5,6 +5,14 @@ import com.emr.gds.features.ReferenceFile.application.ReferenceItem;
 import com.emr.gds.features.ReferenceFile.application.ReferenceService;
 import com.emr.gds.features.ReferenceFile.persistence.SqliteReferenceRepository;
 import javafx.event.ActionEvent;
+import javafx.application.Platform;
+import javafx.scene.control.Button;
+import javafx.scene.control.Label;
+import org.testfx.util.WaitForAsyncUtils;
+import java.io.IOException;
+import java.util.function.Consumer;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.Scene;
 import javafx.scene.control.ComboBox;
@@ -30,6 +38,9 @@ class ReferenceControllerUiTest {
     private TextField search;
     private ComboBox<String> category;
     private SqliteReferenceRepository repository;
+    private final CountDownLatch opening = new CountDownLatch(1);
+    private final CountDownLatch release = new CountDownLatch(1);
+    private volatile boolean openedOnFxThread;
 
     @Start
     @SuppressWarnings("unchecked")
@@ -38,6 +49,15 @@ class ReferenceControllerUiTest {
         repository.save(new ReferenceItem("Medical", "Influenza", "guidelines/flu"));
         repository.save(new ReferenceItem("Lab", "Blood count", "labs"));
         FXMLLoader loader = new FXMLLoader(getClass().getResource("/fxml/reference_frame.fxml"));
+        loader.setControllerFactory(type -> new ReferenceController() {
+            @Override
+            protected void launchReferencePath(Path path, Consumer<String> onFailure)
+                    throws IOException, InterruptedException {
+                openedOnFxThread = Platform.isFxApplicationThread();
+                opening.countDown();
+                if (!release.await(5, TimeUnit.SECONDS)) throw new IOException("Test opener timed out");
+            }
+        });
         stage.setScene(new Scene(loader.load()));
         controller = loader.getController();
         controller.setBasePath(Files.createDirectories(temp.resolve("base")).toFile());
@@ -47,6 +67,22 @@ class ReferenceControllerUiTest {
         table = (TableView<ReferenceItem>) loader.getNamespace().get("referenceTable");
         search = (TextField) loader.getNamespace().get("searchField");
         category = (ComboBox<String>) loader.getNamespace().get("categoryFilter");
+    }
+
+    @Test
+    void folderOpeningDoesNotBlockReferenceSearch(FxRobot robot) throws Exception {
+        Button open = (Button) table.getScene().lookup("#openBaseButton");
+        Label status = (Label) table.getScene().lookup("#statusLabel");
+        robot.interact(open::fire);
+        assertTrue(opening.await(3, TimeUnit.SECONDS));
+        assertFalse(openedOnFxThread);
+        try {
+            robot.interact(() -> { search.setText("flu"); search.fireEvent(new ActionEvent()); });
+            assertEquals(1, table.getItems().size());
+        } finally {
+            release.countDown();
+        }
+        WaitForAsyncUtils.waitFor(5, TimeUnit.SECONDS, () -> status.getText().startsWith("Open request sent"));
     }
 
     @Test

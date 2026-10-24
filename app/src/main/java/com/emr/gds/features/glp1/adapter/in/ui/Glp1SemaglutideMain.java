@@ -5,7 +5,9 @@ import com.emr.gds.input.IAIFxTextAreaManager;
 import com.emr.gds.input.IAIMain;
 import com.emr.gds.input.IAITextAreaManager;
 import com.emr.gds.util.StageSizing;
+import com.emr.gds.util.DesktopFileOpener;
 import javafx.application.Application;
+import javafx.application.Platform;
 import javafx.concurrent.Task;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
@@ -19,12 +21,9 @@ import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.HBox;
 import javafx.stage.Stage;
 
-import java.awt.Desktop;
 import java.io.IOException;
-import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.Locale;
-import java.util.concurrent.TimeUnit;
+import java.util.function.Consumer;
 
 public class Glp1SemaglutideMain extends Application {
 
@@ -118,7 +117,8 @@ public class Glp1SemaglutideMain extends Application {
         Task<Void> openTask = new Task<>() {
             @Override
             protected Void call() throws Exception {
-                openReferenceDocument(DbPaths.resolveDbPath(INSURANCE_REFERENCE));
+                openReferenceDocument(DbPaths.resolveDbPath(INSURANCE_REFERENCE),
+                        message -> Platform.runLater(() -> showReferenceError(owner, message)));
                 return null;
             }
         };
@@ -126,39 +126,23 @@ public class Glp1SemaglutideMain extends Application {
         openTask.setOnSucceeded(e -> button.setDisable(false));
         openTask.setOnFailed(e -> {
             button.setDisable(false);
-            Alert alert = new Alert(Alert.AlertType.ERROR,
-                    "급여 기준 문서를 열지 못했습니다.\n" + openTask.getException().getMessage());
-            alert.setTitle("오젬픽 급여 기준 문서 열기 오류");
-            alert.initOwner(owner);
-            alert.show();
+            showReferenceError(owner, openTask.getException().getMessage());
         });
         Thread worker = new Thread(openTask, "ozempic-reference-opener");
         worker.setDaemon(true);
         worker.start();
     }
 
-    protected void openReferenceDocument(Path document) throws IOException, InterruptedException {
-        if (!Files.isRegularFile(document)) {
-            throw new IOException("문서 파일을 찾을 수 없습니다: " + document.toAbsolutePath());
-        }
-        String os = System.getProperty("os.name").toLowerCase(Locale.ROOT);
-        // Keep Linux document opening out of AWT/GTK and off the JavaFX thread.
-        if (os.contains("linux") || os.contains("mac")) {
-            String launcher = os.contains("mac") ? "open" : "xdg-open";
-            Process process = new ProcessBuilder(launcher, document.toAbsolutePath().toString())
-                    .redirectOutput(ProcessBuilder.Redirect.DISCARD)
-                    .redirectError(ProcessBuilder.Redirect.DISCARD)
-                    .start();
-            // Some launchers stay alive while the document is open; do not wait indefinitely.
-            if (process.waitFor(10, TimeUnit.SECONDS) && process.exitValue() != 0) {
-                throw new IOException(launcher + " 실행 실패 (종료 코드 " + process.exitValue()
-                        + "). ODT 기본 연결 프로그램을 확인해 주세요.");
-            }
-        } else if (Desktop.isDesktopSupported() && Desktop.getDesktop().isSupported(Desktop.Action.OPEN)) {
-            Desktop.getDesktop().open(document.toFile());
-        } else {
-            throw new IOException("이 환경에서는 기본 문서 프로그램을 실행할 수 없습니다.");
-        }
+    private void showReferenceError(Stage owner, String message) {
+        Alert alert = new Alert(Alert.AlertType.ERROR, "급여 기준 문서를 열지 못했습니다.\n" + message);
+        alert.setTitle("오젬픽 급여 기준 문서 열기 오류");
+        alert.initOwner(owner);
+        alert.show();
+    }
+
+    protected void openReferenceDocument(Path document, Consumer<String> onFailure)
+            throws IOException, InterruptedException {
+        DesktopFileOpener.open(document, onFailure);
     }
 
     public static void main(String[] args) {

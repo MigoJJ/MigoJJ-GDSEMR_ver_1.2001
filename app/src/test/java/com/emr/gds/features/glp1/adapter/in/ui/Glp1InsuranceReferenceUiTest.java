@@ -13,6 +13,7 @@ import org.testfx.framework.junit5.Start;
 import org.testfx.util.WaitForAsyncUtils;
 
 import java.io.IOException;
+import java.util.function.Consumer;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.concurrent.CountDownLatch;
@@ -36,7 +37,7 @@ class Glp1InsuranceReferenceUiTest {
         this.stage = stage;
         new Glp1SemaglutideMain() {
             @Override
-            protected void openReferenceDocument(Path document) throws IOException, InterruptedException {
+            protected void openReferenceDocument(Path document, Consumer<String> onFailure) throws IOException, InterruptedException {
                 opened.set(document);
                 launchOnFxThread = Platform.isFxApplicationThread();
                 started.countDown();
